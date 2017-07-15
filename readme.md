@@ -49,7 +49,7 @@ After editing the Site's UUID, upload the files to their appropriate folders. Re
 ## Implementing Forms into the XSL
 Implementing LDP forms into the XSL will require you to edit an XSL file for a corresponding template as well as the site's common.xsl
 
-###Modifying Specific XSL Files
+### Modifying Specific XSL Files
 
 A good place to start would be to edit the XSL file for the page(s) forms will be placed on, since the amount of stuff you are editing is minimal. The first step is modifying the header. You will have to determine if you will be using Bootstrap's CSS for forms or a custom CSS. Simply include the CSS files that you'll be using within the header. Also, please ensure that you are using jQuery. If not, [here's a handy link](http://docs.jquery.com/Downloading_jQuery).
 After including the necessary CSS files and jQuery, find the `copy-of` statement for the area that the forms will be placed in, if present. 
@@ -60,7 +60,7 @@ Modify the copy-of statement so that it appears similar to this:
 
 What we are doing is changing the `copy-of` statement to use a recursive copy template. This way the template can call appropriate templates depending on the type of nodes that it matches.
 
-###Modifying common.xsl
+### Modifying common.xsl
 
 Within the common.xsl you will be placing the templates for LDP Forms as well as several other functions. The first function will be the recursive copy template, which typically resides in `_shared/template-matches.xsl`. If XSL 3.0 is being used, this simply looks like the following:
 
@@ -159,7 +159,7 @@ Within the XSL for the LDP Forms you'll see that every type of input option has 
 
 If you're having an issue where your ASP forms cannot find Jayrock class, then the supplied DLLs are not in the correct Bin folder. Placing the DLLs in the correct Bin folder will correct this error
 
-###Error: ASP Forms Textarea is breaking database results
+### Error: ASP Forms Textarea is breaking database results
 
 If you're having problems with retrieving results from the database with forms that contain textareas, it is most likely an issue to do the workaround to stop textareas from self closing. 
 The way to fix this is by adding: 
@@ -176,7 +176,7 @@ If you're PHP forms are having an issue and are throwing out an error that json_
 
 If you're receiving this error using PHP forms it means that the production server does not have the XMLRPC extension installed/enabled. Your best bet is to have your IT team reconfigure PHP so that the XMLRPC extension is installed/enabled.
 
-###Error: Multiple select/input fields are not showing any results in the database (ASP)
+### Error: Multiple select/input fields are not showing any results in the database (ASP)
 
 If you're having problems with multiple select and input fields, ensure that these fields do not contain square brackets within their names in your ouforms template. Unlike PHP, ASP does not like square brackets in names of elements to group them as an array.
 
