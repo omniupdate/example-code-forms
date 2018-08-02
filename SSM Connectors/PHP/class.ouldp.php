@@ -1,37 +1,49 @@
 <?php
+$debug = false; // enable "debug mode" for this script
 
 class ouldp {
+    public $config;
+    
+    public function __construct($config) {
+        $this->config = $config;
+    }
 
     public function send($method, $param) {
+        global $debug;
         
+        $curlError = "";
         $result = array('active' => false, 'message' => '','data' => '');
         
-		
-		// turns form data into xmlrpc
+        
+        // turns form data into xmlrpc
         $request = xmlrpc_encode_request($method, $param);
 
-		//  this is the original way we sent data when using file_get_contents, when using curl to post the xmlrpc this step is not needed
-		//  $context = stream_context_create(array("http" => array( 'method'  => "POST",'header'  => "Content-Type: text/xml",'content' => $request )));
-		
-        $port = $_ENV['ldp_config']['ssm_port'] ? ':'.$_ENV['ldp_config']['ssm_port'] : '';
-        $path = $_ENV['ldp_config']['ssm_path'] ? $_ENV['ldp_config']['ssm_path'] : '';
+        //  this is the original way we sent data when using file_get_contents, when using curl to post the xmlrpc this step is not needed
+        //  $context = stream_context_create(array("http" => array( 'method'  => "POST",'header'  => "Content-Type: text/xml",'content' => $request )));
         
-        $url = $_ENV['ldp_config']['ssm_host'].$port.$path;
-		// using curl to post the data to the SSM this is a change to the default 
-		// this is a more secure way than allowing url_open when the SSM is on a different server than the website
+        $port = $this->config['ssm_port'] ? ':'.$this->config['ssm_port'] : '';
+        $path = $this->config['ssm_path'] ? $this->config['ssm_path'] : '';
+        
+        $url = $this->config['ssm_host'].$port.$path;
+        // using curl to post the data to the SSM this is a change to the default 
+        // this is a more secure way than allowing url_open when the SSM is on a different server than the website
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, true);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: text/xml'));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: text/xml'));
         curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $ssmResponse = curl_exec($ch);
+        // preserve curl error if present
+        if(curl_error($ch)) {
+            $curlError = curl_error($ch);
+        }
         curl_close($ch);
         
-		// direct decode of ssmResponse from curl method
+        // direct decode of ssmResponse from curl method
         $value = xmlrpc_decode($ssmResponse);
-		
-		// to decode ssm response when using fiel_get_contents instead of curl
-        // $value = xmlrpc_decode(file_get_contents($url, false, $context));
+        
+        // to decode ssm response when using file_get_contents instead of curl
+//         $value = xmlrpc_decode(file_get_contents($url, false, $context));
         
         if (isset($value['faultCode'])) {
             $result['message'] = "Faultcode : " . $value['faultCode'];
@@ -65,12 +77,56 @@ class ouldp {
             $result['message'] = "errors";
             $result['data']    = $value['errors'];
         }
+        elseif ($curlError != "") { //Curl encountered an error.
+            $result['message'] = "Curl Error";
+            $result['data']    = "An error with curl contacting the server. Please enable debug mode for more info.";
+            if ($debug) {
+                $result['data']    = $curlError;
+            }
+        }
         else { //Form encountered an error.
             $result['message'] = "Faultcode : unknown";
             $result['data']    = "An unknown error when contacting the server. Please Check the logs.";
         }
         
         return $result;
+    }
+    
+    public function validateCaptcha(){
+        $response = isset($_POST['g-recaptcha-response']) ? $_POST['g-recaptcha-response'] : '';
+        
+        if($response == ''){
+            // captcha validation failed
+            return false;   
+        }
+        
+        $url = 'https://www.google.com/recaptcha/api/siteverify';
+        $secret = $this->config['captcha_secret'];
+        $remoteip = $_SERVER['REMOTE_ADDR'];
+        
+        $params = array(
+            'secret' => $secret,
+            'response' => $response,
+            'remoteip' => $remoteip
+        );
+        
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        // curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: text/xml'));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $response = json_decode($response,true);
+        
+        if(isset($response['success']) && $response['success'] == true){
+            // captcha validation passed
+            return true;
+        }else{
+            // captcha validation failed
+            return false;
+        }
     }
 }
 

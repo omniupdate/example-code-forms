@@ -1,21 +1,65 @@
 ﻿<%@ WebHandler Language="C#" Class="LDPForm" %>
 using System;
 using System.Configuration;
+using System.Net;
+using System.Collections.Specialized;
+using System.Text;
 using System.Web;
 using CookComputing.XmlRpc;
 using Jayrock.Json;
+using Jayrock.Json.Conversion;
 
 public class LDPForm : IHttpHandler
 {
     public void ProcessRequest(HttpContext context)
     {
-        string myPath = context.Server.MapPath(".");
-        context.Response.ContentType = "text/plain";
-        JsonObject ouResponse;
-        ouResponse = OmniUpdate.LDP.Form.Send(null, context.Request,myPath);
-        context.Response.Write(ouResponse);
-
+        /* CONFIGURATION */             
+        string captchaSecret = ""; // Set to Google reCAPTCHA secret. CAPTCHA validation is bypassed if this is left empty.
+        /*****************/ 
+        
+        bool formValidated = true;
+        
+        if(context.Request["form_grc"] != null && captchaSecret != ""){ // obfuscated form field that indictates google reCAPTCHA validation is required.
+            formValidated = validateCaptcha(context, captchaSecret);
+        }
+        
+        if(formValidated){
+            string myPath = context.Server.MapPath(".");
+            context.Response.ContentType = "text/plain";
+            JsonObject ouResponse = OmniUpdate.LDP.Form.Send(null, context.Request,myPath);
+            context.Response.Write(ouResponse);
+        }else{
+            context.Response.Write("{\"active\":false,\"message\":\"Form did not pass CAPTCHA validation!\",\"data\":\"\"}");
+        }
     }
+    
+    public bool validateCaptcha(HttpContext context, string captchaSecret) {
+        string endPoint = "https://www.google.com/recaptcha/api/siteverify";
+        string captchaResponse = context.Request["g-recaptcha-response"];
+        string remoteIP = context.Request.ServerVariables["REMOTE_ADDR"];
+
+        if(String.IsNullOrEmpty(captchaResponse)){
+            return false;
+        }
+
+        using (var client = new WebClient()){
+            var values = new NameValueCollection();
+            values["secret"] = captchaSecret;
+            values["response"] = captchaResponse;
+            values["remoteip"] = remoteIP;
+
+            var response = client.UploadValues(endPoint, values);
+            var responseString = Encoding.Default.GetString(response);
+            dynamic responseObject = JsonConvert.Import(responseString);
+
+            if(responseObject["success"] != true){
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
     public bool IsReusable
     {
         get
@@ -166,4 +210,3 @@ namespace OmniUpdate
         }
     }
 }
-      

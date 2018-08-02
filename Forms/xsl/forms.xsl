@@ -16,6 +16,7 @@
     
     <xsl:import href="datasets.xsl"/>
     <xsl:param name="serverType">php</xsl:param> <!-- Either: php or asp (for checkboxes and drop-down menus)-->
+    <xsl:param name="captcha-site-key"></xsl:param><!-- Google reCAPTCHA Site Key. If this is omitted captcha will not be included. -->
     <!-- classes for the columns -->
     <xsl:param name="two-column-class">col-md-6</xsl:param> <!-- change this -->
     <xsl:param name="three-column-class">col-md-4</xsl:param> <!-- change this -->
@@ -113,6 +114,13 @@
                     <input type="text" id="{concat('hp',@uuid)}"/>
                 </span>
                 <xsl:apply-templates select="elements/element" mode="ouforms"/>
+
+                <xsl:if test="@captcha='true' and $captcha-site-key != ''">
+                    <div class="g-recaptcha" data-sitekey="{$captcha-site-key}"></div>
+                    <input type="hidden" name="form_grc" value="1"/>
+                    <br />
+                </xsl:if>
+
                 <input type="hidden" name="form_uuid" value ="{@uuid}"/>
                 <input type="hidden" name="site_name" value ="{$ou:site}"/>
                 <button type="submit" id="btn_{@uuid}" class="{$submit-btn-classes}"><xsl:call-template name="submit-text" /></button>&nbsp;
@@ -419,6 +427,11 @@
             
             <xsl:if test="/document/ouc:div/descendant::ouform/elements/element[@type = 'datetime']">
                 <script type="text/javascript" src="/_resources/ldp/forms/js/ou-forms.datetimepicker.full.min.js"></script>
+            </xsl:if>
+
+            <xsl:if test="/document/ouc:div/descendant::ouform[@captcha='true'] and $captcha-site-key != ''">
+                <!-- Include if at least one form on this page has captcha turned on -->
+                <script src='//www.google.com/recaptcha/api.js'></script>
             </xsl:if>
         </xsl:if>
     </xsl:template>
