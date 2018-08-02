@@ -194,3 +194,16 @@ Predefined Attributes:
 * Rules
     * Every declaration in the advanced field must be terminated with a semicolon. Eg. `legend=true;addclass=form_legend;`
     * Attributes are always lowercase.
+
+
+### CAPTCHA Configuration
+LDP forms feature Google reCAPTCHA functionality.
+
+##### Steps to configure:
+1. Generate Google reCAPTCHA credentials by visiting https://www.google.com/recaptcha and copy the "Site Key" and "Secret Key".
+2. Set the param "captcha-site-key" at the top of forms.xsl to the provided "Site Key".
+3. Set the "Secret Key" 
+   - PHP - Set "captcha_secret" at the top of forms.php to the provided "Secret Key".
+   - C# - Set "captchaSecret" at the top of ldp-forms.ashx to the provided "Secret Key".
+
+Now when the CAPTCHA checkbox is checked in the form asset properties it will be included with the form.
